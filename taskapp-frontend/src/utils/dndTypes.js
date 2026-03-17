@@ -1,0 +1,6 @@
+export const DND_TYPES = {
+  LIST_ICON: "LIST_ICON",
+  TASK_ICON: "TASK_ICON",
+  TASK_CARD: "TASK_CARD",
+  LIST_CARD: "LIST_CARD"
+};

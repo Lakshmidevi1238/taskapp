@@ -1,0 +1,38 @@
+services:
+
+  mysql:
+    image: mysql:8
+    container_name: taskapp-mysql
+    restart: always
+    environment:
+      MYSQL_ROOT_PASSWORD: Qazplm1.
+      MYSQL_DATABASE: task_app
+    ports:
+      - "3307:3306"
+    volumes:
+      - mysql_data:/var/lib/mysql
+
+  backend:
+    build: ./backend
+    container_name: taskapp-backend
+    restart: always
+    depends_on:
+      - mysql
+    environment:
+      SPRING_DATASOURCE_URL: jdbc:mysql://mysql:3306/task_app?useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=UTC
+      SPRING_DATASOURCE_USERNAME: root
+      SPRING_DATASOURCE_PASSWORD: Qazplm1.
+    ports:
+      - "8080:8080"
+
+  frontend:
+    build: ./taskapp-frontend
+    container_name: taskapp-frontend
+    restart: always
+    depends_on:
+      - backend
+    ports:
+      - "5173:80"
+
+volumes:
+  mysql_data:

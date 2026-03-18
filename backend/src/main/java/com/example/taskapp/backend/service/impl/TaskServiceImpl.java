@@ -1,6 +1,7 @@
 package com.example.taskapp.backend.service.impl;
 
 import com.example.taskapp.backend.entity.*;
+import org.springframework.data.domain.PageImpl;
 import com.example.taskapp.backend.exception.BadRequestException;
 import com.example.taskapp.backend.exception.NotFoundException;
 import com.example.taskapp.backend.repository.*;
@@ -12,7 +13,8 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.*;
-
+import org.springframework.data.redis.core.RedisTemplate;
+import java.util.concurrent.TimeUnit;
 @Service
 public class TaskServiceImpl implements TaskService {
 
@@ -22,14 +24,15 @@ public class TaskServiceImpl implements TaskService {
     private final TaskAssigneeRepository assigneeRepo;
     private final ActivityService activity;
     private final RealtimeEventService realtime;
-
+    private final RedisTemplate<String, Object> redisTemplate;
     public TaskServiceImpl(
             TaskRepository taskRepo,
             ListEntityRepository listRepo,
             UserRepository userRepo,
             TaskAssigneeRepository assigneeRepo,
             ActivityService activity,
-            RealtimeEventService realtime
+            RealtimeEventService realtime,
+            RedisTemplate<String, Object> redisTemplate
     ) {
         this.taskRepo = taskRepo;
         this.listRepo = listRepo;
@@ -37,6 +40,13 @@ public class TaskServiceImpl implements TaskService {
         this.assigneeRepo = assigneeRepo;
         this.activity = activity;
         this.realtime = realtime;
+        this.redisTemplate = redisTemplate;
+    }
+    private void clearTaskCache() {
+        Set<String> keys = redisTemplate.keys("tasks:search:*");
+        if (keys != null && !keys.isEmpty()) {
+            redisTemplate.delete(keys);
+        }
     }
 
     // ================= CREATE =================
@@ -73,6 +83,7 @@ public class TaskServiceImpl implements TaskService {
         t.setCreatedBy(user);
 
         t = taskRepo.save(t);
+        clearTaskCache();
 
         Long boardId = list.getBoard().getId();
 
@@ -110,6 +121,7 @@ public class TaskServiceImpl implements TaskService {
         t.setDescription(desc);
 
         t = taskRepo.save(t);
+        clearTaskCache();
 
         Long boardId = t.getBoard().getId();
 
@@ -155,6 +167,7 @@ public class TaskServiceImpl implements TaskService {
 
         assigneeRepo.deleteByTask_Id(taskId);
         taskRepo.delete(t);
+        clearTaskCache();
 
         activity.log(boardId, null,
                 "TASK_DELETED", "TASK", taskId, null);
@@ -201,6 +214,7 @@ public class TaskServiceImpl implements TaskService {
         }
 
         taskRepo.saveAll(targetTasks);
+        clearTaskCache();
         activity.log(
         	    targetList.getBoard().getId(),
         	    null,
@@ -236,15 +250,35 @@ public class TaskServiceImpl implements TaskService {
             throw new BadRequestException("Board id cannot be null");
         }
 
+        String key = "tasks:search:" + boardId + ":" + query + ":" + page + ":" + size;
+
+        // 1. Check Redis
+        List<Task> cached = (List<Task>) redisTemplate.opsForValue().get(key);
+
+        if (cached != null) {
+            System.out.println("FROM REDIS ✅");
+            return new PageImpl<>(cached, PageRequest.of(page, size), cached.size());
+        }
+
         Pageable p = PageRequest.of(
                 page, size, Sort.by("createdAt").descending());
 
+        Page<Task> result;
+
         if (query == null || query.isBlank()) {
-            return taskRepo.findByBoard_Id(boardId, p);
+            result = taskRepo.findByBoard_Id(boardId, p);
+        } else {
+            result = taskRepo
+                    .findByBoard_IdAndTitleContainingIgnoreCase(
+                            boardId, query, p);
         }
 
-        return taskRepo
-                .findByBoard_IdAndTitleContainingIgnoreCase(
-                        boardId, query, p);
+        // 2. Store in Redis
+        List<Task> content = result.getContent();
+        redisTemplate.opsForValue().set(key, content, 5, TimeUnit.MINUTES);
+
+        System.out.println("FROM DB ❌");
+
+        return result;
     }
 }

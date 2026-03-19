@@ -31,8 +31,8 @@ export function connectBoardSocket(boardId, onEvent) {
   }
 
   const socket = new SockJS(
-    `http://localhost:8080/ws?token=${token}`
-  );
+  `https://taskapp-production-556d.up.railway.app/ws?token=${token}`
+);
 
   stompClient = new Client({
     webSocketFactory: () => socket,

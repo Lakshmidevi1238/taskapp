@@ -2,7 +2,7 @@ import axios from "axios";
 import { useAuthStore } from "../stores/authStore";
 
 const api = axios.create({
-  baseURL: "http://localhost:8080/api"
+  baseURL: "https://taskapp-production-556d.up.railway.app"
 });
 
 

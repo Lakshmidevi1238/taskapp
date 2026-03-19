@@ -32,7 +32,7 @@ public class WebSocketConfig
                 .addInterceptors(jwtInterceptor)
                 .setHandshakeHandler(
                         new JwtPrincipalHandshakeHandler())
-                .setAllowedOriginPatterns("http://localhost:5173")
+                .setAllowedOriginPatterns("*")
                 .withSockJS();
     }
 }

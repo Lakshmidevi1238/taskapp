@@ -19,7 +19,7 @@ export const useAuthStore = create(
         set({ loading: true });
 
         try {
-          const res = await api.post("/auth/login", {
+          const res = await api.post("/api/auth/login", {
             email,
             password
           });
@@ -47,7 +47,7 @@ export const useAuthStore = create(
         set({ loading: true });
 
         try {
-          const res = await api.post("/auth/register", {
+          const res = await api.post("/api/auth/register", {
             name,
             email,
             password

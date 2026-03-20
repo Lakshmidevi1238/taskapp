@@ -46,7 +46,7 @@ export default function Login() {
     setResetToken("");
 
     try {
-      const res = await api.post("/auth/forgot-password", {
+      const res = await api.post("/api/auth/forgot-password", {
         email: resetEmail
       });
 
@@ -63,7 +63,7 @@ export default function Login() {
   // ================= RESET PASSWORD =================
   const handleReset = async () => {
     try {
-      await api.post("/auth/reset-password", {
+      await api.post("/api/auth/reset-password", {
         token: resetToken,
         newPassword
       });

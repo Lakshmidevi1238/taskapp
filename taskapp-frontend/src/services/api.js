@@ -10,11 +10,7 @@ api.interceptors.request.use(config => {
 
   const store = useAuthStore.getState();
 
- 
-  if (!store.hydrated) {
-    console.warn("Auth not hydrated yet — delaying request");
-    return config;
-  }
+
 
   let token = store.accessToken;
 

@@ -13,8 +13,11 @@ export const useBoardStore = create((set) => ({
   loadBoards: async () => {
     try {
       set({ loading: true });
-      const res = await api.get("/boards/my");
+
+      const res = await api.get("/api/boards/my");
+
       set({ boards: res.data, loading: false });
+
     } catch (e) {
       console.error("loadBoards failed", e);
       set({ loading: false });
@@ -22,7 +25,8 @@ export const useBoardStore = create((set) => ({
   },
 
   createBoard: async (title, description) => {
-    const res = await api.post("/boards", {
+
+    const res = await api.post("/api/boards", { 
       title,
       description
     });
